@@ -1,0 +1,276 @@
+# Mihur-Hub — Implementation Milestones
+
+---
+
+## Milestone 1 — Repo & Project Structure
+
+1. Set up a monorepo structure:
+   - `/api` — Nest.js backend
+   - `/web` — Next.js frontend
+   - `/packages/shared` — shared types and constants
+2. Initialize with `pnpm workspaces` (add `pnpm-workspace.yaml` at root)
+3. Add a root `.gitignore` covering `node_modules`, `.env`, `.next`, `dist`
+4. Add a root `README.md` with project description and a "coming soon" architecture section
+5. **Push and verify the repo structure looks clean on GitHub**
+
+---
+
+## Milestone 2 — Backend Bootstrapping (Nest.js)
+
+1. Inside `/api`, scaffold a new Nest.js project: `nest new api --skip-git`
+2. Install core dependencies: `@nestjs/config`, `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `class-validator`, `class-transformer`
+3. Set up `ConfigModule` globally in `AppModule` so all env vars are available everywhere
+4. Create a `.env` file with placeholder values: `DATABASE_URL`, `JWT_SECRET`, `PORT`
+5. Create a `.env.example` with the same keys but no values — **commit only this one**
+6. Run the app locally with `pnpm start:dev` and confirm it starts on the configured port
+7. **Push — verify the API boots clean with no errors**
+
+---
+
+## Milestone 3 — Database Setup (PostgreSQL + Prisma)
+
+1. Add Docker Compose at the repo root with a single `postgres` service for now
+2. Run `docker compose up -d` and confirm PostgreSQL is running
+3. Install Prisma in `/api`: `pnpm add prisma @prisma/client`
+4. Initialize Prisma: `npx prisma init` — this creates `prisma/schema.prisma`
+5. Write your first models in the schema:
+   - `User` — id, email, name, passwordHash, createdAt
+   - `Project` — id, name, ownerId (FK to User), createdAt
+6. Run `npx prisma migrate dev --name init` — this creates the tables
+7. Open Prisma Studio (`npx prisma studio`) and confirm the tables exist
+8. Create a `PrismaService` in Nest.js that extends `PrismaClient` and implements `onModuleInit`
+9. Register `PrismaService` in `AppModule` as a global provider
+10. **Push — include the migration files, never the actual database data**
+
+---
+
+## Milestone 4 — Auth: Register & Login
+
+1. Generate the Auth module: `nest g module auth`, `nest g service auth`, `nest g controller auth`
+2. Generate the Users module: `nest g module users`, `nest g service users`
+3. In `UsersService`, implement:
+   - `findByEmail(email)` — query Prisma for a user by email
+   - `create(dto)` — hash the password with `bcrypt` and insert the user
+4. In `AuthService`, implement:
+   - `register(dto)` — call `UsersService.create`, return the new user without the password hash
+   - `login(dto)` — find user, compare password with `bcrypt.compare`, throw `UnauthorizedException` if wrong
+   - `generateToken(user)` — use `JwtService.sign` to return a signed JWT
+5. In `AuthController`, create two POST routes:
+   - `POST /auth/register` — calls `AuthService.register`
+   - `POST /auth/login` — calls `AuthService.login`, returns `{ access_token }`
+6. Add `class-validator` DTOs (`RegisterDto`, `LoginDto`) with `@IsEmail()`, `@MinLength()` decorators
+7. Enable `ValidationPipe` globally in `main.ts`
+8. Test both routes in Postman or Thunder Client — register a user, log in, get a token
+9. **Push — auth working end-to-end before touching the frontend**
+
+---
+
+## Milestone 5 — JWT Guard & Protected Routes
+
+1. Set up `JwtStrategy` (extends `PassportStrategy`) — validates the token and returns the user payload
+2. Create a global `JwtAuthGuard` that uses `passport-jwt`
+3. Create a `GET /auth/me` route protected by the guard — returns the current user from the JWT payload
+4. Test: call `/auth/me` without a token (should get 401), then with a valid token (should get user data)
+5. Add a `@CurrentUser()` custom decorator that extracts the user from `req.user` — you'll use this everywhere
+6. **Push — protected routes verified working**
+
+---
+
+## Milestone 6 — Projects API
+
+1. Generate: `nest g module projects`, `nest g service projects`, `nest g controller projects`
+2. Add a `Project` relation to your Prisma schema if not already done — each project belongs to a User
+3. In `ProjectsService`, implement:
+   - `create(userId, dto)` — creates a new project owned by that user
+   - `findAllForUser(userId)` — returns all projects the user owns
+   - `findOne(id, userId)` — returns one project, throws `NotFoundException` if not found or not owned by user
+   - `update(id, userId, dto)` — updates name/description
+   - `delete(id, userId)` — deletes the project
+4. In `ProjectsController`, wire up all five routes under `/projects`, all protected by `JwtAuthGuard`
+5. Test all five routes in Postman — create two projects, list them, update one, delete one
+6. **Push — full projects CRUD confirmed working**
+
+---
+
+## Milestone 7 — Frontend Bootstrapping (Next.js)
+
+1. Inside `/web`, scaffold: `pnpm create next-app@latest web --typescript --tailwind --app --skip-git`
+2. Install UI dependencies: `shadcn-ui` init, then add components: `button`, `input`, `card`, `dialog`, `toast`
+3. Install `axios` and `@tanstack/react-query`
+4. Create an `api/` folder inside `web/src` — add an `axios` instance with `baseURL` pointing to the Nest.js API, and an interceptor that attaches the JWT from `localStorage` to every request
+5. Wrap the app in a `ReactQueryProvider` and a `ToastProvider` in the root `layout.tsx`
+6. Set the global font to `Geist Mono` (or `JetBrains Mono`) for a dev-tool feel
+7. Set up a basic dark-mode-first color palette in `tailwind.config.ts` — neutral grays, violet accent
+8. Create a placeholder homepage at `/` — just a "Mihur-Hub" heading and a "Get Started" button
+9. **Push — Next.js app boots, Tailwind styles apply, no console errors**
+
+---
+
+## Milestone 8 — Auth UI (Register, Login, Session)
+
+1. Create `/app/(auth)/login/page.tsx` and `/app/(auth)/register/page.tsx`
+2. Build a `LoginForm` client component:
+   - Email and password inputs using shadcn `Input`
+   - On submit, call `POST /auth/login`, store the returned token in `localStorage`
+   - On success, redirect to `/dashboard` using `useRouter`
+   - Show a toast on error
+3. Build a `RegisterForm` client component — same pattern, calls `POST /auth/register`
+4. Create an `AuthContext` (or a Zustand store) that holds `{ user, token, isLoggedIn }` — hydrate it from `localStorage` on mount
+5. Create a `ProtectedRoute` wrapper component — redirects to `/login` if not authenticated
+6. Wrap the `/dashboard` layout with `ProtectedRoute`
+7. Test the full flow: register → login → land on dashboard → refresh → still logged in
+8. **Push — auth flow works end-to-end in the browser**
+
+---
+
+## Milestone 9 — Dashboard UI & Projects CRUD
+
+1. Create `/app/dashboard/page.tsx` — the main screen after login
+2. Build a `ProjectList` component:
+   - Uses `useQuery` from React Query to fetch `GET /projects`
+   - Shows each project as a card with name, created date, and a "Open" button
+   - Shows a skeleton loader while loading
+3. Build a `CreateProjectDialog` component:
+   - A shadcn `Dialog` with a form — project name and description
+   - On submit calls `POST /projects` via `useMutation`, then invalidates the projects query so the list refreshes
+4. Add a delete button on each card — calls `DELETE /projects/:id`, invalidates query
+5. Add a top navbar with the user's name (from `AuthContext`) and a logout button that clears the token and redirects to login
+6. **Push — dashboard fully functional, projects CRUD works in the UI**
+
+---
+
+## Milestone 10 — Redis Setup & Session Caching
+
+1. Add a `redis` service to `docker-compose.yml`
+2. Install `ioredis` in the API: `pnpm add ioredis`
+3. Create a `RedisModule` with a `RedisService` that wraps an `ioredis` client
+4. Add Redis-based caching to `ProjectsService.findAllForUser`:
+   - On first call, hit Postgres, then write result to Redis with a 60s TTL
+   - On subsequent calls within 60s, return directly from Redis
+   - On any create/update/delete, invalidate that user's cache key
+5. Confirm caching works by adding a log line — you should see "cache hit" on the second call within the TTL window
+6. **Push — Redis running in Docker, caching verified in logs**
+
+---
+
+## Milestone 11 — File/Code Ingestion & Embedding Pipeline
+
+1. Add the `members` and `documents` tables to your Prisma schema:
+   - `Document` — id, projectId, filename, content (text), status (enum: PENDING, PROCESSED, FAILED), createdAt
+2. Run a new Prisma migration
+3. Install `@nestjs/bull` and `bull` for the job queue — add `bull` service to Docker Compose (it uses Redis, point it at the same Redis instance)
+4. Create an `IngestionModule` with a `IngestionQueue` and a `IngestionProcessor`
+5. Create `POST /projects/:id/documents` — accepts a text body or file upload, saves a `Document` record with status `PENDING`, then enqueues a job
+6. In the `IngestionProcessor`, the job should:
+   - Fetch the document content
+   - Split it into chunks of ~500 tokens using a simple character-based splitter for now
+   - For each chunk, call the OpenAI embeddings API (or Cohere) to get a vector
+   - Store each chunk + vector (serialized as JSON for now, proper vector DB next milestone)
+   - Mark the document status as `PROCESSED`
+7. Test by uploading a small text file — check the Bull dashboard (`bull-board` package) to see the job go from waiting → active → completed
+8. **Push — ingestion pipeline working end-to-end**
+
+---
+
+## Milestone 12 — Vector Store (Pinecone or Chroma)
+
+1. Sign up for Pinecone free tier (or add Chroma to Docker Compose — simpler for local dev)
+2. Install the client: `pnpm add @pinecone-database/pinecone` or `chromadb`
+3. Create a `VectorStoreService` that wraps upsert and query operations
+4. Update the `IngestionProcessor` — instead of storing vectors in JSON, upsert each chunk into the vector store with metadata: `{ projectId, documentId, chunkIndex, text }`
+5. Add a `VectorStoreService.query(projectId, queryEmbedding, topK)` method — queries only within the project's namespace
+6. Test: ingest a document, then manually call the query method with an embedding and confirm you get relevant chunks back
+7. **Push — vectors stored and queryable**
+
+---
+
+## Milestone 13 — AI Chat Backend (RAG)
+
+1. Install the Anthropic SDK: `pnpm add @anthropic-ai/sdk`
+2. Create a `ChatModule` with `ChatService` and `ChatController`
+3. Add a `Conversation` and `Message` model to Prisma — `Conversation` belongs to a Project, `Message` belongs to a Conversation, has `role` (user/assistant) and `content`
+4. Implement `ChatService.sendMessage(projectId, conversationId, userMessage)`:
+   - Embed the user message using the same embeddings model
+   - Query the vector store for the top 5 relevant chunks from that project
+   - Build a prompt: system message with retrieved context, then the conversation history, then the new user message
+   - Call the Anthropic API (Claude) with streaming enabled
+   - Stream the response back token by token using Server-Sent Events
+   - After streaming completes, save both the user message and assistant response to the database
+5. Create `POST /chat/:projectId/messages` — starts or continues a conversation, returns SSE stream
+6. Test with `curl --no-buffer` or a REST client that supports SSE — send a question about a document you ingested
+7. **Push — RAG pipeline working, AI responds with context from your documents**
+
+---
+
+## Milestone 14 — AI Chat UI
+
+1. Create `/app/dashboard/projects/[id]/chat/page.tsx`
+2. Build the `ChatPanel` component:
+   - A scrollable message list showing user and assistant messages with different styles (user right-aligned violet, assistant left-aligned gray)
+   - A textarea input at the bottom with a send button
+   - Use `EventSource` (or a custom hook) to consume the SSE stream from the backend
+   - Render the assistant response token-by-token as it arrives — the streaming effect
+   - Auto-scroll to the bottom as new tokens arrive
+   - Disable the input and show a spinner while a response is streaming
+3. Add a conversation history sidebar — list past conversations for the project, click to load one
+4. **Push — streaming AI chat working in the browser**
+
+---
+
+## Milestone 15 — Code Review Feature
+
+1. Add `POST /projects/:id/review` endpoint in the API:
+   - Accepts a `{ diff: string }` body
+   - Sends the diff to Claude with a system prompt instructing it to review the code, identify issues, and suggest improvements in structured JSON: `{ summary, issues: [{ line, severity, message, suggestion }] }`
+   - Returns the structured response (no streaming needed here — wait for full JSON)
+2. Build the `CodeReview` page at `/dashboard/projects/[id]/review`:
+   - A large `textarea` for pasting a diff
+   - A "Review" button that calls the endpoint
+   - Renders the result as a list of issues grouped by severity (error / warning / suggestion), each with the line number and suggested fix
+   - Show a loading state while the review is in progress
+3. **Push — code review working end-to-end**
+
+---
+
+## Milestone 16 — WebSocket Real-Time Updates
+
+1. Install `@nestjs/websockets` and `@nestjs/platform-socket.io` in the API
+2. Create a `NotificationsGateway` — a Nest.js WebSocket gateway
+3. Whenever a document finishes processing (in `IngestionProcessor`), emit a `document.ready` event to the relevant project's room
+4. On the frontend, connect to the WebSocket on the project page using the `socket.io-client`
+5. When a `document.ready` event is received, show a toast: "Your document is ready — the AI can now answer questions about it"
+6. Invalidate the documents list React Query cache so the UI refreshes automatically
+7. **Push — real-time notifications working**
+
+---
+
+## Milestone 17 — Dockerize Everything
+
+1. Write a `Dockerfile` for the Nest.js API — multi-stage: `builder` stage runs `pnpm build`, `runner` stage copies only `dist/` and `node_modules`
+2. Write a `Dockerfile` for the Next.js app — same multi-stage pattern
+3. Update `docker-compose.yml` to include all services:
+   - `api`, `web`, `postgres`, `redis`, `nginx`
+4. Write an `nginx.conf` that proxies `/api/*` to the Nest.js container and `/*` to the Next.js container
+5. Add a `docker-compose.prod.yml` override for production settings (no volume mounts, restart policies)
+6. Test: `docker compose up --build` from the repo root — the entire app should come up with one command
+7. **Push — full Docker stack verified working**
+
+---
+
+## Milestone 18 — Polish, README & Deploy
+
+1. Write the full `README.md`:
+   - What Mihur-Hub does (2–3 sentences)
+   - Architecture diagram (screenshot the one from this guide)
+   - Tech stack list with reasons for each choice
+   - `docker compose up` quickstart
+   - Environment variables table (copy from `.env.example`)
+   - Screenshots of the chat UI, dashboard, and code review panel
+2. Add a GitHub Actions workflow at `.github/workflows/ci.yml`:
+   - On every push to `main` or PR: run `pnpm lint` and `pnpm build` for both apps
+3. Deploy options — pick one:
+   - **Railway** — easiest, supports Docker Compose natively, free tier
+   - **Render** — free tier for web services, add a managed Postgres
+   - **Fly.io** — more control, good free tier
+4. Add the live URL to the GitHub repo description and the README
+5. **Final push — project is live and presentable**

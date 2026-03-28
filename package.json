@@ -1,0 +1,10 @@
+{
+  "name": "mihur-hub",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {},
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

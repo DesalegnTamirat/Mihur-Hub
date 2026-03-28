@@ -1,0 +1,66 @@
+Mihur-Hub — Product Requirements Document
+
+What is Mihur-Hub?
+Mihur-Hub is a collaborative workspace for software engineering teams where an AI assistant lives inside your project and actually understands your codebase. Instead of switching between your code editor, a chat tool, a documentation wiki, and a separate AI tool, your team has one place where all of that converges — and the AI in that place has been trained on your actual project files, not just generic programming knowledge.
+Think of it as the intersection of Notion, Linear, and GitHub Copilot Chat — but self-hosted, privacy-friendly, and built around the idea that the AI should know your code, not just code in general.
+
+The Problem It Solves
+Engineering teams waste enormous amounts of time on knowledge transfer. A new developer joins and spends weeks asking "where does this logic live?", "why was this decision made?", "how does the auth flow work?" Senior developers get interrupted constantly answering the same questions. Documentation gets written once and goes stale within months. Code reviews are slow because reviewers need context they don't always have.
+Existing AI tools like ChatGPT or GitHub Copilot are smart but they are generic — they know how to write code, but they do not know your codebase, your conventions, or your architectural decisions. You still have to paste context in manually every time.
+Mihur-Hub fixes this by letting your team upload their codebase, documents, and notes, and then asking the AI questions that get answered with full awareness of your specific project.
+
+Who Is It For?
+
+Small to mid-size engineering teams (2–20 people) who feel the pain of scattered knowledge
+Solo developers who want an AI that remembers their project context across sessions
+Engineering leads who want to speed up onboarding for new hires
+Teams who care about data privacy and don't want their proprietary code sent to a third-party chat tool without control
+
+
+Core User Stories
+As a developer, I want to:
+
+Upload my project's codebase or documentation and have the AI learn from it, so I can ask questions about my own code without manually pasting context every time
+Ask the AI "how does our payment flow work?" and get an answer that references the actual files in my project, not a generic explanation
+Paste a code diff into a review panel and get structured feedback — what's wrong, what's risky, what could be improved — in seconds
+Search across all my project documents and past AI conversations in one place, so nothing gets lost
+Get notified in real time when a document I uploaded has finished processing and is ready to be queried
+
+As a team lead, I want to:
+
+Create a project workspace and invite my teammates so we share one AI-powered knowledge base
+See all past AI conversations within a project, so I know what questions are being asked repeatedly and can address gaps in documentation
+Know that my codebase stays within a system I control, not scattered across multiple third-party AI tools
+
+As a new team member, I want to:
+
+Get up to speed on an unfamiliar codebase by asking the AI questions in plain English, without having to interrupt my colleagues every hour
+Read through past conversations where the AI explained parts of the system to other teammates
+
+
+Key Features
+Project Workspaces
+Each project is a self-contained space with its own document library, AI memory, and team members. Nothing leaks between projects. You create a project, give it a name, and start uploading content.
+Document Ingestion
+You can upload code files, markdown docs, architecture notes, PDF files, and plain text. Mihur-Hub reads and indexes all of it so the AI can reference it when answering questions. Uploading is as simple as dragging a file in.
+AI Chat — Context-Aware
+The central feature. You open a chat panel inside a project and ask questions in natural language. The AI pulls the most relevant pieces from your uploaded documents and uses them to answer. It tells you which files it referenced so you can verify. Conversations are saved and searchable.
+Code Review Panel
+You paste a code diff or a snippet and ask for a review. The AI gives you structured feedback: a plain-English summary of what the code does, a list of issues with severity levels, and specific suggestions for improvement. No setup, no linting config — just paste and ask.
+Team Collaboration
+Projects have members. All teammates see the same document library and can read each other's past AI conversations. If a senior dev had a long conversation explaining the database schema to the AI, a junior dev can read that conversation and learn from it.
+Real-Time Notifications
+When you upload a large file, processing takes a moment. Mihur-Hub shows you a live status update and notifies you the instant the document is ready to query — no need to refresh or guess.
+Search
+A unified search bar that looks across your uploaded documents and past AI conversations simultaneously. Find anything in your project's knowledge base instantly.
+
+What Mihur-Hub Is Not
+
+It is not a code editor. It does not replace VS Code or your terminal.
+It is not a project management tool. It does not have tickets, sprints, or kanban boards.
+It is not a version control system. It does not replace Git or GitHub.
+It is not a general-purpose AI chatbot. It is specifically designed around project knowledge, not answering random questions.
+
+
+The Experience in One Paragraph
+You create a workspace called "Backend API", upload your entire src/ folder and three architecture docs. You invite two teammates. Within minutes, you type "explain how our authentication middleware works" and the AI responds with a clear explanation that references your actual middleware file by name, quotes the relevant function, and explains the decision in plain English. Your newest teammate, who joined last week, reads that conversation the next day and understands the system without a single interruption to the team. That is Mihur-Hub.
