@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: mihurhub-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mihurhub
+    ports:
+      - "5433:5432"
+    volumes:
+      - mihurhub_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  mihurhub_postgres_data:
